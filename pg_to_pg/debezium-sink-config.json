@@ -1,0 +1,17 @@
+{
+  "name": "sharingcdc-sink-connector",
+  "config": {
+    "auto.create": "true",
+    "connection.url": "jdbc:postgresql://host.docker.internal:5434/sharingcdc-copy?user=mine&password=qwepoi123",
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "insert.mode": "upsert",
+    "pk.fields": "id",
+    "pk.mode": "record_key",
+    "delete.enabled": "true",
+    "tasks.max": "1",
+    "topics": "todo",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "false"
+  }
+}

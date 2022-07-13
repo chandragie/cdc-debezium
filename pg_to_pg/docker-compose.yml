@@ -1,0 +1,89 @@
+version: "3.7"
+services:
+  postgres:
+    image: debezium/postgres:13
+    container_name: pg1
+    expose:
+      - 5433
+    ports:
+      - 5433:5433
+    environment:
+      - POSTGRES_USER=mine
+      - POSTGRES_PASSWORD=qwepoi123
+      - POSTGRES_DB=sharingcdc
+      - PGPORT=5433
+
+  postgres-copy:
+    image: debezium/postgres:13
+    container_name: pg2
+    expose:
+      - 5434
+    ports:
+      - 5434:5434
+    environment:
+      - POSTGRES_USER=mine
+      - POSTGRES_PASSWORD=qwepoi123
+      - POSTGRES_DB=sharingcdc-copy
+      - PGPORT=5434
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.5.3
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-enterprise-kafka:5.5.3
+    container_name: kafka
+    links:
+      - zookeeper 
+    depends_on: [zookeeper]
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9991
+    ports:
+      - 9092:9092
+
+  debezium:
+    image: dbz-conn-jdbc-sink-2
+    container_name: dbz
+    links:
+     - kafka
+     - postgres
+     - postgres-copy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect-status
+      KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on: [kafka]
+    ports:
+      - 8083:8083
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:5.5.3
+    container_name: schema
+    environment:
+      - SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zookeeper:2181
+      - SCHEMA_REGISTRY_HOST_NAME=schema-registry
+      - SCHEMA_REGISTRY_LISTENERS=http://schema-registry:8081,http://localhost:8081
+    ports:
+      - 8081:8081
+    depends_on: [zookeeper, kafka]
+  
+  kafkacat:
+    image: edenhill/kafkacat:1.5.0
+    container_name: kafkacat
+    entrypoint: 
+      - /bin/sh 
+      - -c 
+      - |
+        while [ 1 -eq 1 ];do sleep 60;done
