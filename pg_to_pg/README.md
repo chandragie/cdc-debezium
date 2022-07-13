@@ -62,7 +62,7 @@ CREATE TABLE public.todo (
 );
 ```
 
-To enable CDC with Posgres, we need to give replication permission to our database:
+To enable CDC with Postgres, we need to give replication permission to our database:
 
 ```sql
 ALTER TABLE public.todo REPLICA IDENTITY FULL;
